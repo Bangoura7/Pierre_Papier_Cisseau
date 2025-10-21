@@ -1,63 +1,131 @@
+// Variables globales
 let humanScore = 0;
 let computerScore = 0;
+let gameOver = false;
 
-// Fonction utilitaire pour mettre la première lettre en majuscule
+// Sélection des éléments DOM
+const rockButton = document.querySelector('#rock');
+const paperButton = document.querySelector('#paper');
+const scissorsButton = document.querySelector('#scissors');
+const resultsDiv = document.querySelector('#results');
+const scoreDiv = document.querySelector('#score');
+
+// Constantes
+const WINNING_SCORE = 5;
+const CHOICES = ["pierre", "papier", "ciseau"];
+
+// Map pour déterminer le gagnant
+const winConditions = {
+    pierre: "ciseau",
+    papier: "pierre",
+    ciseau: "papier"
+};
+
+// === FONCTIONS UTILITAIRES ===
+
 function capitalizeFirst(word) {
     return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
+function createMessage(text, color = null, isBold = false) {
+    const element = document.createElement('p');
+    element.textContent = text;
+    if (color) element.style.color = color;
+    if (isBold) element.style.fontWeight = 'bold';
+    return element;
+}
+
+function displayMessage(message, color = null, isBold = false) {
+    const element = createMessage(message, color, isBold);
+    resultsDiv.appendChild(element);
+}
+
+// === FONCTIONS DE JEU ===
+
 function getComputerChoice() {
-    const choices = ["pierre", "papier", "ciseau"];
-    const randomIndex = Math.floor(Math.random() * choices.length);
-    // randomIndex sera 0, 1, ou 2
-    // choices[0] = "pierre"
-    // choices[1] = "papier" 
-    // choices[2] = "ciseau"
-    return choices[randomIndex];
+    const randomIndex = Math.floor(Math.random() * CHOICES.length);
+    return CHOICES[randomIndex];
 }
 
-function getHumanChoice() {
-    let choice = prompt("Choisissez pierre, papier ou ciseau :");
-    
-    while ((choice = choice.toLowerCase()) !== "pierre" && 
-           choice !== "papier" && 
-           choice !== "ciseau") {
-        choice = prompt("Choix invalide. Choisissez pierre, papier ou ciseau :");
-    }
-    
-    return choice;
-}
-
-function playRound(humanChoice, computerChoice) {
-    
-    console.log(`Vous : ${capitalizeFirst(humanChoice)} vs Ordinateur : ${capitalizeFirst(computerChoice)}`);
-    
-    // Cas d'égalité 
+function determineWinner(humanChoice, computerChoice) {
     if (humanChoice === computerChoice) {
-        console.log(`Égalité ! Vous avez tous les deux choisi ${humanChoice}.`);
         return "tie";
     }
+    return winConditions[humanChoice] === computerChoice ? "human" : "computer";
+}
 
-    // Cas où l'humain gagne
-    if ((humanChoice === "pierre" && computerChoice === "ciseau") ||
-        (humanChoice === "papier" && computerChoice === "pierre") ||
-        (humanChoice === "ciseau" && computerChoice === "papier")) {
-        
-        console.log(`Vous gagnez ! ${capitalizeFirst(humanChoice)} bat ${computerChoice}.`);
-        return "human";
-    }
-
-    // Cas où l'ordinateur gagne
-    else {
-        console.log(`Vous perdez ! ${capitalizeFirst(computerChoice)} bat ${humanChoice}.`);
-        return "computer";
+function displayRoundResult(humanChoice, computerChoice, winner) {
+    displayMessage(`Vous : ${capitalizeFirst(humanChoice)} vs Ordinateur : ${capitalizeFirst(computerChoice)}`);
+    
+    if (winner === "tie") {
+        displayMessage(`Égalité ! Vous avez tous les deux choisi ${humanChoice}.`);
+    } else if (winner === "human") {
+        displayMessage(`Vous gagnez ! ${capitalizeFirst(humanChoice)} bat ${computerChoice}.`, 'green');
+    } else {
+        displayMessage(`Vous perdez ! ${capitalizeFirst(computerChoice)} bat ${humanChoice}.`, 'red');
     }
 }
 
-// Jouer une manche
-const humanChoice = getHumanChoice();
-const computerChoice = getComputerChoice();
-console.log(`Choix de l'ordinateur : ${computerChoice}`);
+function updateScore() {
+    scoreDiv.textContent = `Score - Vous: ${humanScore} | Ordinateur: ${computerScore}`;
+}
 
-const result = playRound(humanChoice, computerChoice);
-console.log(`Résultat : ${result}`);
+function displayGameWinner() {
+    const separator = document.createElement('hr');
+    resultsDiv.appendChild(separator);
+    
+    if (humanScore === WINNING_SCORE) {
+        const winnerText = document.createElement('h2');
+        winnerText.textContent = '🎉 Félicitations ! Vous avez gagné le jeu ! 🎉';
+        winnerText.style.color = 'green';
+        resultsDiv.appendChild(winnerText);
+    } else {
+        const winnerText = document.createElement('h2');
+        winnerText.textContent = '😢 Dommage ! L\'ordinateur a gagné le jeu ! 😢';
+        winnerText.style.color = 'red';
+        resultsDiv.appendChild(winnerText);
+    }
+}
+
+function checkWinner() {
+    if (humanScore === WINNING_SCORE || computerScore === WINNING_SCORE) {
+        gameOver = true;
+        disableButtons();
+        displayGameWinner();
+    }
+}
+
+function disableButtons() {
+    [rockButton, paperButton, scissorsButton].forEach(button => {
+        button.disabled = true;
+    });
+}
+
+function playRound(humanChoice) {
+    if (gameOver) return;
+    
+    const computerChoice = getComputerChoice();
+    const winner = determineWinner(humanChoice, computerChoice);
+    
+    displayRoundResult(humanChoice, computerChoice, winner);
+    
+    if (winner === 'human') {
+        humanScore++;
+    } else if (winner === 'computer') {
+        computerScore++;
+    }
+    
+    updateScore();
+    checkWinner();
+}
+
+// === INITIALISATION ===
+
+function initGame() {
+    rockButton.addEventListener('click', () => playRound('pierre'));
+    paperButton.addEventListener('click', () => playRound('papier'));
+    scissorsButton.addEventListener('click', () => playRound('ciseau'));
+}
+
+// Démarrer le jeu
+initGame();
